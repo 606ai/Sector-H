@@ -1,0 +1,30 @@
+# Core AI Libraries
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.2.0
+torch>=2.0.0
+tensorflow>=2.12.0
+transformers>=4.30.0
+
+# Computer Vision
+opencv-python>=4.8.0
+Pillow>=9.5.0
+
+# NLP
+spacy>=3.5.0
+nltk>=3.8.1
+
+# Data Processing
+jupyter>=1.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# API and Web
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-dotenv>=1.0.0
+
+# Development Tools
+black>=23.3.0
+flake8>=6.0.0
+pytest>=7.3.0
