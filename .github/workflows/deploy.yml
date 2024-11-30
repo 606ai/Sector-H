@@ -16,21 +16,39 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: website/package-lock.json
 
       - name: Install Dependencies
         run: |
           cd website
-          npm install
+          npm ci
 
       - name: Build Website
+        env:
+          NEXTAUTH_URL: https://sectorh.site
+          NEXT_PUBLIC_BASE_URL: https://sectorh.site
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          GITHUB_ID: ${{ secrets.OAUTH_GITHUB_ID }}
+          GITHUB_SECRET: ${{ secrets.OAUTH_GITHUB_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.OAUTH_GOOGLE_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.OAUTH_GOOGLE_SECRET }}
+          DISCORD_CLIENT_ID: ${{ secrets.OAUTH_DISCORD_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.OAUTH_DISCORD_SECRET }}
         run: |
           cd website
           npm run build
 
       - name: Deploy to Hostinger
+        uses: easingthemes/ssh-deploy@main
         env:
-          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
-          HOSTINGER_PROJECT_ID: ${{ secrets.HOSTINGER_PROJECT_ID }}
-        run: |
-          # Add Hostinger deployment commands here
-          echo "Deploying to Hostinger..."
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOSTINGER_HOST }}
+          REMOTE_USER: ${{ secrets.HOSTINGER_USERNAME }}
+          SOURCE: "website/.next/"
+          TARGET: "/home/${{ secrets.HOSTINGER_USERNAME }}/public_html/"
+          EXCLUDE: "/website/node_modules/, /website/.git/"
+          SCRIPT_AFTER: |
+            cd /home/${{ secrets.HOSTINGER_USERNAME }}/public_html/
+            npm install --production
+            pm2 restart sector-h || pm2 start npm --name "sector-h" -- start

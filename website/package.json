@@ -1,0 +1,58 @@
+{
+  "name": "sector-h-website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "type-check": "tsc --noEmit",
+    "prepare": "husky install",
+    "analyze": "ANALYZE=true next build"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,scss,md}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@auth/nextjs": "^0.0.0-380f8d56",
+    "@auth/prisma-adapter": "^2.7.4",
+    "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.0.18",
+    "@prisma/client": "^6.0.0",
+    "axios": "^1.6.2",
+    "framer-motion": "^11.12.0",
+    "next": "^14.0.3",
+    "next-auth": "^4.24.10",
+    "prisma": "^6.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-tsparticles": "^2.12.2",
+    "sector-h-website": "file:",
+    "tailwindcss": "^3.3.5",
+    "tsparticles": "^3.7.1"
+  },
+  "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.39",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^8.16.0",
+    "@typescript-eslint/parser": "^8.16.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.54.0",
+    "eslint-config-next": "^14.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "postcss": "^8.4.31",
+    "prettier": "^3.4.1",
+    "typescript": "^5.3.2"
+  }
+}

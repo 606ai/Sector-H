@@ -1,0 +1,19 @@
+server:
+  host: 0.0.0.0
+  port: 5000
+
+artifact_root: s3://sector-h-models
+
+tracking:
+  database:
+    dialect: postgresql
+    username: mlflow
+    password: ${MLFLOW_DB_PASSWORD}
+    host: postgres
+    port: 5432
+    database: mlflow
+
+s3:
+  aws_access_key_id: ${AWS_ACCESS_KEY_ID}
+  aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+  region: ${AWS_DEFAULT_REGION}

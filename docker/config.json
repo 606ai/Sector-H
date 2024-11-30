@@ -1,0 +1,10 @@
+{
+  "auths": {
+    "https://index.docker.io/v1/": {
+      "auth": "",
+      "username": "606ai"
+    }
+  },
+  "credsStore": "desktop",
+  "currentContext": "desktop-linux"
+}

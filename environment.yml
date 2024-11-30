@@ -1,0 +1,56 @@
+name: sector-h
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - conda-env-export
+  
+  # Deep Learning
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cudatoolkit=11.8
+  - tensorflow
+  
+  # Scientific Computing
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  
+  # Jupyter Environment
+  - jupyter
+  - jupyterlab
+  - ipywidgets
+  - ipykernel
+  
+  # Visualization
+  - matplotlib
+  - seaborn
+  - plotly
+  
+  # Development Tools
+  - black
+  - flake8
+  - pytest
+  - mypy
+  
+  # Additional dependencies via pip
+  - pip:
+    - transformers
+    - fastapi
+    - uvicorn[standard]
+    - python-dotenv
+    - pydantic
+    - pydantic-settings
+    - huggingface-hub
+    - opencv-python
+    - spacy
+    - nltk
+    - wandb  # Weights & Biases for experiment tracking
+    - mlflow  # ML experiment management
+    - dvc  # Data version control

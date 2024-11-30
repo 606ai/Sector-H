@@ -1,0 +1,131 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10.x]
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r api/requirements.txt
+
+    - name: Install Node.js dependencies
+      working-directory: ./website
+      run: |
+        npm ci
+
+    - name: Run Python tests
+      working-directory: ./api
+      run: |
+        pytest tests/ --cov=. --cov-report=xml
+
+    - name: Run Node.js tests
+      working-directory: ./website
+      run: |
+        npm test
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./api/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.10.x
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+
+    - name: Install linters
+      run: |
+        pip install black flake8 mypy
+        npm install -g eslint prettier
+
+    - name: Run Python linters
+      run: |
+        black --check api/
+        flake8 api/
+        mypy api/
+
+    - name: Run JavaScript linters
+      working-directory: ./website
+      run: |
+        eslint .
+        prettier --check .
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run security scan
+      uses: snyk/actions/python@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        command: monitor
+
+  docker:
+    needs: [test, lint, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push API
+      uses: docker/build-push-action@v4
+      with:
+        context: ./api
+        push: true
+        tags: 606ai/sector-h-api:latest
+
+    - name: Build and push Website
+      uses: docker/build-push-action@v4
+      with:
+        context: ./website
+        push: true
+        tags: 606ai/sector-h-web:latest
