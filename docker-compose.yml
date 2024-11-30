@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Frontend
   website:
     build:
       context: ./website
@@ -9,10 +10,18 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
     volumes:
       - ./website:/app
       - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - frontend-network
+      - api-network
 
+  # Backend API
   api:
     build:
       context: ./api
@@ -21,38 +30,127 @@ services:
       - "8000:8000"
     environment:
       - PYTHON_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/sectorh
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=your_jwt_secret_key_here
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./api:/app
     depends_on:
       - db
       - redis
+    networks:
+      - api-network
+      - ml-network
 
+  # Database
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sectorh
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - api-network
+
+  # Redis for caching and real-time features
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - api-network
+
+  # ML Service
+  ml_service:
+    build:
+      context: .
+      dockerfile: docker/ml.Dockerfile
+    environment:
+      - PYTHON_ENV=development
+      - MODEL_PATH=/app/models
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ./models:/app/models
+      - ./ml_service:/app/ml_service
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - ml-network
+
+  # Jupyter Lab for development
   jupyter:
     build:
       context: .
-      dockerfile: jupyter/Dockerfile
+      dockerfile: docker/jupyter.Dockerfile
     ports:
       - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=your_token_here
     volumes:
       - .:/workspace
-    environment:
-      - JUPYTER_TOKEN=sector-h
+      - jupyter_data:/root/.jupyter
+    networks:
+      - ml-network
 
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_USER=sectorh
-      - POSTGRES_PASSWORD=sectorh
-      - POSTGRES_DB=sectorh
+  # MLflow for experiment tracking
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/mlflow.Dockerfile
     ports:
-      - "5432:5432"
+      - "5000:5000"
+    environment:
+      - MLFLOW_TRACKING_URI=postgresql://postgres:postgres@db:5432/mlflow
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mlflow_data:/mlflow
+    depends_on:
+      - db
+    networks:
+      - ml-network
 
-  redis:
-    image: redis:7
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:v2.45.0
     ports:
-      - "6379:6379"
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana:10.0.3
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring-network
 
 volumes:
   postgres_data:
+  redis_data:
+  jupyter_data:
+  mlflow_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  frontend-network:
+  api-network:
+  ml-network:
+  monitoring-network:
