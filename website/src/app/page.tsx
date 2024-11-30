@@ -1,144 +1,73 @@
 'use client';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import ParticleBackground from '../components/ParticleBackground';
 import AnimatedBeaker from '../components/AnimatedBeaker';
-import { motion } from 'framer-motion';
-
-// Dynamically import ParticleBackground with no SSR
-const ParticleBackground = dynamic(() => import('../components/ParticleBackground'), {
-  ssr: false,
-});
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-  },
-};
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24 relative overflow-hidden">
-      {/* Particle Background */}
-      <div className="absolute inset-0 -z-10">
-        <ParticleBackground />
+      <ParticleBackground />
+      
+      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
+        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+          Welcome to&nbsp;
+          <code className="font-mono font-bold">Sector-H</code>
+        </p>
       </div>
 
-      {/* Background gradients */}
-      <div className="absolute inset-0 hero-gradient -z-20"></div>
-      <div className="absolute inset-0 -z-20" style={{
-        background: 'radial-gradient(circle at 50% 50%, rgba(0, 124, 240, 0.1) 0%, transparent 50%)',
-      }}></div>
-
-      {/* Header */}
-      <motion.div
-        className="z-10 w-full max-w-5xl"
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-      >
-        <motion.h1
-          className="text-4xl md:text-6xl font-bold text-center mb-4"
-          variants={itemVariants}
-        >
-          Welcome to{' '}
-          <span className="gradient-text">Sector-H</span>
-        </motion.h1>
-        <motion.p
-          className="text-center text-lg text-gray-400"
-          variants={itemVariants}
-        >
-          Your Advanced AI Development Playground
-        </motion.p>
-      </motion.div>
-
-      {/* Center Icon */}
-      <motion.div
-        className="relative flex place-items-center my-16"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", duration: 1.5 }}
-      >
+      <div className="relative flex place-items-center">
         <AnimatedBeaker />
-        {/* Decorative circles */}
-        <div className="absolute -inset-32 blur-3xl opacity-20" style={{
-          background: 'radial-gradient(circle, rgba(0,240,255,0.2) 0%, transparent 70%)',
-        }}></div>
-      </motion.div>
+      </div>
 
-      {/* Navigation Cards */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl z-10"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {[
-          {
-            title: 'Jupyter',
-            description: 'Access Jupyter notebooks for data science and machine learning.',
-            href: '/jupyter',
-            external: true
-          },
-          {
-            title: 'API Docs',
-            description: 'Explore the API documentation and endpoints.',
-            href: '/api-docs',
-            external: true
-          },
-          {
-            title: 'Playground',
-            description: 'Try out AI models and experiments in real-time.',
-            href: '/playground',
-            external: false
-          },
-          {
-            title: 'GitHub',
-            description: 'View the source code and contribute to the project.',
-            href: 'https://github.com/yourusername/sector-h',
-            external: true
-          }
-        ].map((item, index) => (
-          <motion.a
-            key={item.title}
-            href={item.href}
-            className="card group p-6 hover:cursor-pointer"
-            target={item.external ? "_blank" : undefined}
-            rel={item.external ? "noopener noreferrer" : undefined}
-            variants={itemVariants}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <h2 className="text-2xl font-semibold mb-3 gradient-text">
-              {item.title}{' '}
-              <span className="inline-block transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </h2>
-            <p className="text-gray-400">
-              {item.description}
-            </p>
-          </motion.a>
-        ))}
-      </motion.div>
+      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left z-10">
+        <Link
+          href="/dashboard"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            Dashboard{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Access your ML projects and experiments.
+          </p>
+        </Link>
 
-      {/* Decorative gradient orbs */}
-      <div className="absolute top-1/4 -left-32 w-64 h-64 blur-3xl opacity-20 animate-pulse" style={{
-        background: 'radial-gradient(circle, rgba(0,102,255,0.2) 0%, transparent 70%)',
-      }}></div>
-      <div className="absolute bottom-1/4 -right-32 w-64 h-64 blur-3xl opacity-20 animate-pulse" style={{
-        background: 'radial-gradient(circle, rgba(0,240,255,0.2) 0%, transparent 70%)',
-      }}></div>
+        <Link
+          href="https://github.com/606ai/Sector-H"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            GitHub{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Explore our open-source code.
+          </p>
+        </Link>
+
+        <Link
+          href="/docs"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            Docs{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Learn about Sector-H features and API.
+          </p>
+        </Link>
+      </div>
     </main>
   );
 }
