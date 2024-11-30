@@ -1,16 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  reactStrictMode: true,
-  swcMinify: true,
   images: {
-    domains: ['localhost', 'sectorh.site', 'www.sectorh.site', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com', 'cdn.discordapp.com'],
+    domains: ['github.com', 'avatars.githubusercontent.com'],
   },
-  experimental: {
-    optimizeCss: true,
-  },
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    GITHUB_ID: process.env.OAUTH_GITHUB_ID,
+    GITHUB_SECRET: process.env.OAUTH_GITHUB_SECRET,
+    GOOGLE_ID: process.env.OAUTH_GOOGLE_ID,
+    GOOGLE_SECRET: process.env.OAUTH_GOOGLE_SECRET,
+    DISCORD_CLIENT_ID: process.env.OAUTH_DISCORD_ID,
+    DISCORD_CLIENT_SECRET: process.env.OAUTH_DISCORD_SECRET,
   },
 }
 

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universe-A Web Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">Universe-A</h1>
+            <p class="text-gray-400">AI-Driven Universe Simulation</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Control Panel -->
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold mb-4">Control Panel</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-400 mb-2">AI Model</label>
+                        <select id="modelSelect" class="w-full bg-gray-700 rounded p-2">
+                            <option value="llama2">Llama 2</option>
+                            <option value="mistral">Mistral</option>
+                            <option value="codellama">CodeLlama</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-2">Scenario</label>
+                        <select id="scenarioSelect" class="w-full bg-gray-700 rounded p-2">
+                            <option value="civilization">Civilization</option>
+                            <option value="exploration">Exploration</option>
+                            <option value="competition">Competition</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button id="startBtn" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">
+                            Start Simulation
+                        </button>
+                        <button id="stopBtn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded" disabled>
+                            Stop Simulation
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="bg-gray-800 p-6 rounded-lg md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4">World View</h2>
+                <canvas id="worldCanvas" class="w-full bg-gray-900 rounded"></canvas>
+            </div>
+
+            <!-- Information Panel -->
+            <div class="bg-gray-800 p-6 rounded-lg md:col-span-3">
+                <h2 class="text-xl font-semibold mb-4">Information Panel</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-medium mb-2">Resources</h3>
+                        <div id="resourcesList" class="space-y-2 text-gray-300"></div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium mb-2">Recent Events</h3>
+                        <div id="eventsList" class="space-y-2 text-gray-300"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('worldCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resourcesList = document.getElementById('resourcesList');
+        const eventsList = document.getElementById('eventsList');
+
+        // Socket.io event handlers
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('world_update', (data) => {
+            updateVisualization(data);
+            updateInformation(data);
+        });
+
+        // Button event handlers
+        startBtn.addEventListener('click', async () => {
+            const model = document.getElementById('modelSelect').value;
+            const scenario = document.getElementById('scenarioSelect').value;
+
+            const response = await fetch('/api/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ model, scenario })
+            });
+
+            if (response.ok) {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            }
+        });
+
+        stopBtn.addEventListener('click', async () => {
+            const response = await fetch('/api/stop', {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        });
+
+        // Update functions
+        function updateVisualization(data) {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw world state
+            if (data.state) {
+                // Draw agents
+                Object.entries(data.state.agents || {}).forEach(([id, agent]) => {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.beginPath();
+                    ctx.arc(agent.location.x * 10, agent.location.y * 10, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw structures
+                Object.entries(data.state.structures || {}).forEach(([id, structure]) => {
+                    ctx.fillStyle = '#808080';
+                    ctx.fillRect(structure.x * 10, structure.y * 10, 
+                               structure.size * 10, structure.size * 10);
+                });
+            }
+        }
+
+        function updateInformation(data) {
+            // Update resources
+            if (data.state && data.state.resources) {
+                resourcesList.innerHTML = Object.entries(data.state.resources)
+                    .map(([resource, amount]) => `
+                        <div class="flex justify-between">
+                            <span class="capitalize">${resource}</span>
+                            <span>${amount.toFixed(1)}</span>
+                        </div>
+                    `).join('');
+            }
+
+            // Update events
+            if (data.state && data.state.events) {
+                eventsList.innerHTML = data.state.events
+                    .map(event => `
+                        <div class="text-sm">
+                            <span class="text-purple-400">${event.type}:</span>
+                            ${event.description}
+                        </div>
+                    `).join('');
+            }
+        }
+
+        // Initial canvas setup
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientWidth * 0.6;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universe-A Monitoring Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8">Universe-A Monitoring Dashboard</h1>
+        
+        <!-- System Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-2">CPU Usage</h2>
+                <div id="cpuGauge" class="h-32"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-2">Memory Usage</h2>
+                <div id="memoryGauge" class="h-32"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-2">Active Users</h2>
+                <div id="usersCounter" class="text-4xl font-bold text-center mt-4">0</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-2">Active Scenarios</h2>
+                <div id="scenariosCounter" class="text-4xl font-bold text-center mt-4">0</div>
+            </div>
+        </div>
+        
+        <!-- Time Series Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-2">CPU Usage History</h2>
+                <div id="cpuChart" class="h-64"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-2">Memory Usage History</h2>
+                <div id="memoryChart" class="h-64"></div>
+            </div>
+        </div>
+        
+        <!-- Analytics Section -->
+        <div class="grid grid-cols-1 gap-4">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4">Scenario Analytics</h2>
+                <div id="scenarioStats" class="h-96"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Initialize data arrays for time series
+        const timeData = [];
+        const cpuData = [];
+        const memoryData = [];
+        const maxDataPoints = 50;
+
+        // Create gauge charts
+        const cpuGauge = Plotly.newPlot('cpuGauge', [{
+            type: 'indicator',
+            mode: 'gauge+number',
+            value: 0,
+            title: { text: "CPU %" },
+            gauge: {
+                axis: { range: [null, 100] },
+                bar: { color: "#1E40AF" },
+                steps: [
+                    { range: [0, 50], color: "#DBEAFE" },
+                    { range: [50, 75], color: "#93C5FD" },
+                    { range: [75, 100], color: "#60A5FA" }
+                ]
+            }
+        }], {
+            margin: { t: 25, b: 25, l: 25, r: 25 }
+        });
+
+        const memoryGauge = Plotly.newPlot('memoryGauge', [{
+            type: 'indicator',
+            mode: 'gauge+number',
+            value: 0,
+            title: { text: "Memory (MB)" },
+            gauge: {
+                axis: { range: [null, 1000] },
+                bar: { color: "#1E40AF" },
+                steps: [
+                    { range: [0, 500], color: "#DBEAFE" },
+                    { range: [500, 750], color: "#93C5FD" },
+                    { range: [750, 1000], color: "#60A5FA" }
+                ]
+            }
+        }], {
+            margin: { t: 25, b: 25, l: 25, r: 25 }
+        });
+
+        // Create time series charts
+        const cpuChart = Plotly.newPlot('cpuChart', [{
+            y: cpuData,
+            x: timeData,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#1E40AF' }
+        }], {
+            margin: { t: 25, b: 25, l: 25, r: 25 },
+            yaxis: { title: 'CPU %' }
+        });
+
+        const memoryChart = Plotly.newPlot('memoryChart', [{
+            y: memoryData,
+            x: timeData,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#1E40AF' }
+        }], {
+            margin: { t: 25, b: 25, l: 25, r: 25 },
+            yaxis: { title: 'Memory (MB)' }
+        });
+
+        // Handle incoming metrics
+        socket.on('metrics_update', (data) => {
+            // Update gauges
+            Plotly.update('cpuGauge', { value: [data.cpu_usage] });
+            Plotly.update('memoryGauge', { value: [data.memory_usage] });
+            
+            // Update counters
+            document.getElementById('usersCounter').textContent = data.active_users;
+            document.getElementById('scenariosCounter').textContent = data.active_scenarios;
+            
+            // Update time series
+            timeData.push(new Date(data.timestamp));
+            cpuData.push(data.cpu_usage);
+            memoryData.push(data.memory_usage);
+            
+            // Maintain fixed window of data points
+            if (timeData.length > maxDataPoints) {
+                timeData.shift();
+                cpuData.shift();
+                memoryData.shift();
+            }
+            
+            // Update charts
+            Plotly.update('cpuChart', {
+                x: [timeData],
+                y: [cpuData]
+            });
+            
+            Plotly.update('memoryChart', {
+                x: [timeData],
+                y: [memoryData]
+            });
+        });
+
+        // Fetch and display scenario analytics
+        fetch('/api/analytics/summary')
+            .then(response => response.json())
+            .then(data => {
+                const scenarios = Object.keys(data.scenario_performance.completion_rates);
+                const completionRates = scenarios.map(s => data.scenario_performance.completion_rates[s] * 100);
+                const avgDurations = scenarios.map(s => data.scenario_performance.average_duration[s]);
+                
+                Plotly.newPlot('scenarioStats', [
+                    {
+                        x: scenarios,
+                        y: completionRates,
+                        name: 'Completion Rate (%)',
+                        type: 'bar'
+                    },
+                    {
+                        x: scenarios,
+                        y: avgDurations,
+                        name: 'Avg Duration (s)',
+                        type: 'bar'
+                    }
+                ], {
+                    barmode: 'group',
+                    margin: { t: 25, b: 50, l: 50, r: 25 },
+                    yaxis: { title: 'Value' },
+                    xaxis: { title: 'Scenario' }
+                });
+            });
+    </script>
+</body>
+</html>

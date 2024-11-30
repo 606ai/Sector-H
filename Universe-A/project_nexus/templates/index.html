@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Nexus - AI-Powered Project Management</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-indigo-600 text-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <span class="text-xl font-bold">Project Nexus</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button @click="activeView = 'tasks'" 
+                                :class="{'bg-indigo-700': activeView === 'tasks'}"
+                                class="px-3 py-2 rounded-md text-sm font-medium">
+                            Tasks
+                        </button>
+                        <button @click="activeView = 'chat'" 
+                                :class="{'bg-indigo-700': activeView === 'chat'}"
+                                class="px-3 py-2 rounded-md text-sm font-medium">
+                            Chat
+                        </button>
+                        <button @click="activeView = 'documents'" 
+                                :class="{'bg-indigo-700': activeView === 'documents'}"
+                                class="px-3 py-2 rounded-md text-sm font-medium">
+                            Documents
+                        </button>
+                        <button @click="activeView = 'metrics'" 
+                                :class="{'bg-indigo-700': activeView === 'metrics'}"
+                                class="px-3 py-2 rounded-md text-sm font-medium">
+                            Metrics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div v-if="activeView === 'tasks'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Tasks</h2>
+                    <button @click="createTask" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        New Task
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div v-for="(tasks, status) in tasksByStatus" :key="status" class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4 capitalize">{{ status }}</h3>
+                        <div class="space-y-4">
+                            <div v-for="task in tasks" :key="task.id" class="bg-gray-50 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                                <p class="text-sm text-gray-600 mt-1">{{ task.description }}</p>
+                                <div class="mt-2 flex items-center justify-between">
+                                    <span :class="{
+                                        'bg-red-100 text-red-800': task.priority === 'high',
+                                        'bg-yellow-100 text-yellow-800': task.priority === 'medium',
+                                        'bg-green-100 text-green-800': task.priority === 'low'
+                                    }" class="px-2 py-1 text-xs rounded-full">
+                                        {{ task.priority }}
+                                    </span>
+                                    <span class="text-sm text-gray-500">{{ task.assignee }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="activeView === 'chat'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Chat</h2>
+                    <button @click="createChannel" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        New Channel
+                    </button>
+                </div>
+                <div class="grid grid-cols-4 gap-6">
+                    <div class="col-span-1 bg-white rounded-lg shadow p-4">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Channels</h3>
+                        <div class="space-y-2">
+                            <button v-for="channel in channels" 
+                                    :key="channel.id"
+                                    @click="selectChannel(channel.id)"
+                                    :class="{'bg-indigo-50': selectedChannel === channel.id}"
+                                    class="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50">
+                                # {{ channel.name }}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-span-3 bg-white rounded-lg shadow">
+                        <div v-if="selectedChannel" class="h-full flex flex-col">
+                            <div class="flex-1 p-4 overflow-y-auto">
+                                <div v-for="message in currentChannelMessages" 
+                                     :key="message.id"
+                                     class="flex items-start space-x-3 mb-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                            {{ message.sender[0] }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-baseline space-x-2">
+                                            <span class="font-medium text-gray-900">{{ message.sender }}</span>
+                                            <span class="text-xs text-gray-500">
+                                                {{ new Date(message.timestamp).toLocaleTimeString() }}
+                                            </span>
+                                        </div>
+                                        <p class="text-gray-700 mt-1">{{ message.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border-t p-4">
+                                <form @submit.prevent="sendMessage" class="flex space-x-4">
+                                    <input v-model="newMessage" 
+                                           type="text"
+                                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Type your message...">
+                                    <button type="submit"
+                                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                                        Send
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div v-else class="h-full flex items-center justify-center text-gray-500">
+                            Select a channel to start chatting
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="activeView === 'documents'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Documents</h2>
+                    <button @click="createDocument" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        New Document
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div v-for="doc in documents" 
+                         :key="doc.id"
+                         class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ doc.title }}</h3>
+                        <p class="text-sm text-gray-600 mt-2">{{ doc.content.substring(0, 100) }}...</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span v-for="tag in doc.tags"
+                                  :key="tag"
+                                  class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs">
+                                {{ tag }}
+                            </span>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-500">
+                            Last modified: {{ new Date(doc.last_modified).toLocaleDateString() }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="activeView === 'metrics'" class="space-y-6">
+                <h2 class="text-2xl font-bold text-gray-900">Project Metrics</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Task Completion</h3>
+                        <div class="mt-2 text-3xl font-bold text-indigo-600">
+                            {{ Math.round(metrics.taskCompletion * 100) }}%
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Team Utilization</h3>
+                        <div class="mt-2 text-3xl font-bold text-indigo-600">
+                            {{ Math.round(metrics.teamUtilization * 100) }}%
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Project Velocity</h3>
+                        <div class="mt-2 text-3xl font-bold text-indigo-600">
+                            {{ metrics.projectVelocity }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
